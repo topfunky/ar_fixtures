@@ -1,0 +1,10 @@
+stout:
+  id: 1
+  name: stout
+  rating: 5
+  sipped_at: <%= Time.now %>
+ipa:
+  id: 2
+  name: india pale ale
+  rating: 4
+  sipped_at: <%= Time.now - 60 %>
