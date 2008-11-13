@@ -16,6 +16,8 @@ load(File.dirname(__FILE__) + "/schema.rb") if File.exist?(File.dirname(__FILE__
 Test::Unit::TestCase.fixture_path = File.dirname(__FILE__) + "/fixtures/"
 $LOAD_PATH.unshift(Test::Unit::TestCase.fixture_path)
 
+RAILS_ENV = 'test' unless defined?(RAILS_ENV)
+
 class Test::Unit::TestCase #:nodoc:
   def create_fixtures(*table_names)
     if block_given?

@@ -8,11 +8,26 @@ class ActiveRecord::Base
     # Writes content of this table to db/table_name.yml, or the specified file.
     #
     # Writes all content by default, but can be limited.
-    def dump_to_file(path=nil, limit=nil)
-      opts = {}
+    def dump_to_file(path=nil, limit=nil, opts={})
       opts[:limit] = limit if limit
       path ||= "db/#{table_name}.yml"
       write_file(File.expand_path(path, RAILS_ROOT), self.find(:all, opts).to_yaml)
+      habtm_to_file
+    end
+
+    # dump the habtm association table
+    def habtm_to_file
+      path ||= "db/#{table_name}.yml"
+      joins = self.reflect_on_all_associations.select { |j|
+        j.macro == :has_and_belongs_to_many
+      }
+      joins.each do |join|
+        hsh = {}
+        connection.select_all("SELECT * FROM #{join.options[:join_table]}").each_with_index { |record, i|
+          hsh["join_#{'%05i' % i}"] = record
+        }
+        write_file(File.expand_path("db/#{join.options[:join_table]}.yml", RAILS_ROOT), hsh.to_yaml(:SortKeys => true))
+      end
     end
 
     ##
@@ -33,9 +48,12 @@ class ActiveRecord::Base
       records = YAML::load( erb_data )
 
       records.each do |record|
-        puts "______________"
-        puts record.to_yaml
-        puts "______________"
+        unless 'test' == RAILS_ENV
+          puts "______________"
+          puts record.to_yaml
+          puts "______________"
+        end
+        
         record_copy = self.new(record.attributes)
         record_copy.id = record.id
 
@@ -57,13 +75,12 @@ class ActiveRecord::Base
     # Uses existing data in the database.
     #
     # Will be written to +test/fixtures/table_name.yml+. Can be restricted to some number of rows.
-    def to_fixture(limit=nil)
-      opts = {}
+    def to_fixture(limit=nil, key=nil, opts={})
       opts[:limit] = limit if limit
 
       write_file(File.expand_path("test/fixtures/#{table_name}.yml", RAILS_ROOT),
       self.find(:all, opts).inject({}) { |hsh, record|
-        hsh.merge("#{table_name.singularize}_#{'%05i' % record.id rescue record.id}" => record.attributes)
+        hsh.merge((record.attributes[key.to_s] || "#{table_name.singularize}_#{'%05i' % record.id rescue record.id}") => record.attributes)
       }.to_yaml(:SortKeys => true))
       habtm_to_fixture
     end

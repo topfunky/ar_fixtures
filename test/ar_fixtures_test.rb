@@ -29,12 +29,19 @@ class ArFixturesTest < Test::Unit::TestCase
     assert_equal 2, Beer.count, "#{Beer.find(:all).to_yaml}"
   end
 
+  def test_habtm_to_file
+    Beer.habtm_to_file
+    assert File.exist?(File.join(RAILS_ROOT, 'db', 'beers_drunkards.yml'))
+  end
+
   def test_load_from_file
-    cp  File.join(RAILS_ROOT, 'fixtures', 'glasses.yml'), 
-        File.join(RAILS_ROOT, 'db', 'glasses.yml')
-    assert_equal 0, Glass.count
-    Glass.load_from_file
-    assert_equal 2, Glass.count
+    cp  File.join(RAILS_ROOT, 'fixtures', 'beers.yml'), 
+        File.join(RAILS_ROOT, 'db', 'beers.yml')
+    cp  File.join(RAILS_ROOT, 'fixtures', 'beers_drunkards.yml'), 
+        File.join(RAILS_ROOT, 'db', 'beers_drunkards.yml')
+    Beer.load_from_file
+    assert_equal 2, Beer.count
+    # assert_equal 1, Beer.find(1).drunkards.size
   end
 
   def test_to_fixture
